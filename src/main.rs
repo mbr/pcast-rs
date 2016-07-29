@@ -171,5 +171,9 @@ fn main() {
 
     let gpvr: &PairView = (&v).into();
     println!("pvr {:>016X}", gpvr.0.data_field);
+
+    let base = v.clone();
+    let sub: &Pair = v.pair_ref();
+    // let x = *sub;
 }
 
