@@ -36,6 +36,11 @@ impl Packet {
         StatusMutRef(self)
     }
 
+    // FIXME: tryinto would be correct here?
+    pub fn get_status(self) -> StatusPacket {
+        StatusPacket(self)
+    }
+
     pub fn get_raw_payload(&self) -> &[u8] {
         &self.data
     }
@@ -72,7 +77,6 @@ impl<'a> Deref for StatusRef<'a> {
     }
 }
 
-
 impl<'a> Deref for StatusMutRef<'a> {
     type Target = StatusRef<'a>;
 
@@ -94,13 +98,13 @@ impl<'a> Deref for StatusMutRef<'a> {
 //     }
 // }
 
-// impl<'a> Deref for StatusMutRef<'a> {
-//     type Target = StatusRef<'a>;
 
-//     fn deref(&self) -> &Packet {
-//         self.0
-//     }
-// }
+// Not working yet: 4.
+
+// Base-methods: StatusPacket -> &StatusPacket -> unsafe conversion?
+// better: StatusPacket -> Deref<Base>
+// how to get StatusRef and StatusMutRef?
+
 
 #[cfg(test)]
 mod test {
