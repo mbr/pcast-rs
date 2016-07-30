@@ -39,6 +39,7 @@ or differently:
 2. s.base_method(), s.sub_method()
 3. let s = log.first().to_sub()
 4. sub_process(s)
+5. Easy field access using structs fields (Note: Limited value because endianness often differs)
 
 Applicability
 =============
@@ -46,9 +47,11 @@ Applicability
      Base->Sub  &Base->&Sub  SubView(Base)  SubRef(&Base)
  1.   Deref      Deref        Deref          Deref
  2.   Deref      Deref        Deref          Deref
- 3.     ?          ✓            ?              ✓
+ 3.     X          ✓            X              ✓
  4.     ✓          X            ✓              X
+ 5.     ✓          ✓            X              X
 
+Possible workaround: Deref SubView(Base) -> SubRef(&Base) or Deref Sub->&Base
 
 Verdict
 -------
