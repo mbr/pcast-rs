@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::ops::Deref;
 use std::mem::transmute;
 
@@ -22,19 +23,28 @@ pub struct StatusPacket {
     status_2: u8,
 }
 
+#[derive(Debug)]
+pub enum ConversionError{}
+
+impl TryFrom<Packet> for StatusPacket {
+    type Err = ConversionError;
+
+    fn try_from(packet: Packet) -> Result<Self, Self::Err> {
+        // FIXME: check if packet_type matches
+        Ok(unsafe { transmute(packet) })
+    }
+}
+
+impl<'a> TryFrom<&'a Packet> for &'a StatusPacket {
+    type Err = ConversionError;
+
+    fn try_from(packet_ref: &Packet) -> Result<Self, Self::Err> {
+        // FIXME: check here
+        Ok(unsafe { transmute(packet_ref) })
+    }
+}
+
 impl Packet {
-    // in a perfect world, we use try_into here
-    pub fn into_status(self) -> StatusPacket {
-        assert_eq!(self.packet_type, 2);
-        unsafe { transmute(self) }
-    }
-
-    // can also use try_into?
-    pub fn get_status_ref(&self) -> &StatusPacket {
-        assert_eq!(self.packet_type, 2);
-        unsafe { transmute(self) }
-    }
-
     pub fn get_status_mut_ref(&mut self) -> &mut StatusPacket {
         assert_eq!(self.packet_type, 2);
         unsafe { transmute(self) }
@@ -78,11 +88,16 @@ impl Deref for StatusPacket {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::convert::TryInto;
 
     /// send takes a raw packet to send
     fn send(packet: &Packet) {
         let _ = packet.get_raw_payload();
         // ...
+    }
+
+    fn swallow_status_packet(_: StatusPacket) {
+        // goodbye, s!
     }
 
     #[test]
@@ -91,7 +106,7 @@ mod test {
         send(&owned);
 
         {
-            let status_view = owned.get_status_ref();
+            let status_view: &StatusPacket = (&owned).try_into().unwrap();
             send(status_view);
         }
 
@@ -110,7 +125,11 @@ mod test {
         send(pref);
 
         {
-            let status_view = pref.get_status_ref();
+            // FIXME: DerefMut not a good idea beacause we don't want
+            //        to allow manipulations on a reference -- it might
+            //        invalidate StatusPacket
+            //        &(*pref) seems kind of silly though
+            let status_view: &StatusPacket = (&(*pref)).try_into().unwrap();
             send(&status_view);
         }
 
@@ -126,7 +145,7 @@ mod test {
         owned.set_raw_payload(b"xxxxxxx".to_owned());
 
         {
-            let status_view = owned.get_status_ref();
+            let status_view: &StatusPacket = (&owned).try_into().unwrap();
             status_view.get_status_2();
             status_view.get_raw_payload();
         }
@@ -145,8 +164,17 @@ mod test {
         let v = vec![Packet::new(2, b"0123456".to_owned())];
 
         for p in v.iter() {
-            let status_view = p.get_status_ref();
+            let status_view: &StatusPacket = (&(*p)).try_into().unwrap();
             status_view.get_status_2();
         }
+    }
+
+    #[test]
+    fn use_owned_status() {
+        let p = Packet::new(2, b"0123456".to_owned());
+
+        let s: StatusPacket = p.try_into().unwrap();
+
+        swallow_status_packet(s);
     }
 }
