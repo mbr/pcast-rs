@@ -1,5 +1,4 @@
-use std::mem::transmute;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 #[repr(C)]
 pub struct Packet {
@@ -41,6 +40,10 @@ impl Packet {
         &self.data
     }
 
+    pub fn set_raw_payload(&mut self, data: [u8; 7]) {
+        self.data = data
+    }
+
     pub fn new(packet_type: u8, data: [u8; 7]) -> Packet {
         Packet {
             packet_type: packet_type,
@@ -74,8 +77,7 @@ impl<'a> Deref for StatusMutRef<'a> {
     type Target = StatusRef<'a>;
 
     fn deref(&self) -> &StatusRef<'a> {
-        // DOESNT WORK
-        // &StatusRef(&self.0)
+        // FIXME: is this safe? are we violating the "one-mut" rule somehow?
         unsafe {
             &*((self as *const StatusMutRef) as *const StatusRef)
         }
@@ -125,6 +127,45 @@ mod test {
         status_mut_view.set_status_2(0x12);
         assert_eq!(status_mut_view.get_status_2(), 0x12);
         send(&status_mut_view);
+    }
+
+    #[test]
+    fn test_send_from_ref() {
+        let mut owned = Packet::new(2, b"0123456".to_owned());
+
+        let pref: &mut Packet = &mut owned;
+
+        send(pref);
+
+        {
+            let status_view = pref.get_status_ref();
+            send(&status_view);
+        }
+
+        let mut status_mut_view = pref.get_status_mut_ref();
+        status_mut_view.set_status_2(0x12);
+        assert_eq!(status_mut_view.get_status_2(), 0x12);
+        send(&status_mut_view);
+    }
+
+    #[test]
+    fn test_call_base_and_sub_methods() {
+        let mut owned = Packet::new(2, b"0123456".to_owned());
+        owned.set_raw_payload(b"xxxxxxx".to_owned());
+
+        {
+            let status_view = owned.get_status_ref();
+            status_view.get_status_2();
+            status_view.get_raw_payload();
+        }
+
+        let mut status_mut_view = owned.get_status_mut_ref();
+        status_mut_view.get_status_2();
+        status_mut_view.get_raw_payload();
+        status_mut_view.set_status_2(0x34);
+
+        // does not work (and shouldn't):
+        // status_mut_view.set_raw_payload(b"xxxxxxx".to_owned());
     }
 }
 
