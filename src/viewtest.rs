@@ -2,21 +2,13 @@ use std::ops::Deref;
 
 #[repr(C)]
 pub struct Packet {
-    // packet type: 0 => ping, 1 => pong, 2 => status
+    // packet type: 0x02 is "status"
     packet_type: u8,
 
     // 7 byte payload.
     // status: 4 byte u32 in big endian byteorder for node id, 3x1 byte status
     data: [u8; 7],
 }
-
-pub struct PingPacket(Packet);
-pub struct PingRef<'a>(&'a Packet);
-pub struct PingMutRef<'a>(&'a mut Packet);
-
-pub struct PongPacket(Packet);
-pub struct PongRef<'a>(&'a Packet);
-pub struct PongMutRef<'a>(&'a mut Packet);
 
 pub struct StatusPacket(Packet);
 pub struct StatusRef<'a>(&'a Packet);
@@ -34,7 +26,7 @@ impl Packet {
         StatusMutRef(self)
     }
 
-    // FIXME: tryinto would be correct here?
+    // FIXME: tryinto would be correct here as well?
     pub fn get_status(self) -> StatusPacket {
         StatusPacket(self)
     }
@@ -97,11 +89,7 @@ impl<'a> Deref for StatusMutRef<'a> {
 // }
 
 
-// Not working yet: 4.
-
-// Base-methods: StatusPacket -> &StatusPacket -> unsafe conversion?
-// better: StatusPacket -> Deref<Base>
-// how to get StatusRef and StatusMutRef?
+// Not working: 4.
 
 
 #[cfg(test)]
