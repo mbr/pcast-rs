@@ -130,7 +130,7 @@ mod test {
     }
 
     #[test]
-    fn test_send_from_ref() {
+    fn send_from_ref() {
         let mut owned = Packet::new(2, b"0123456".to_owned());
 
         let pref: &mut Packet = &mut owned;
@@ -149,7 +149,7 @@ mod test {
     }
 
     #[test]
-    fn test_call_base_and_sub_methods() {
+    fn call_base_and_sub_methods() {
         let mut owned = Packet::new(2, b"0123456".to_owned());
         owned.set_raw_payload(b"xxxxxxx".to_owned());
 
@@ -166,6 +166,16 @@ mod test {
 
         // does not work (and shouldn't):
         // status_mut_view.set_raw_payload(b"xxxxxxx".to_owned());
+    }
+
+    #[test]
+    fn create_from_immutable_ref() {
+        let v = vec![Packet::new(2, b"0123456".to_owned())];
+
+        for p in v.iter() {
+            let status_view = p.get_status_ref();
+            status_view.get_status_2();
+        }
     }
 }
 
