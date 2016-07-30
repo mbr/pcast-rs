@@ -6,8 +6,6 @@ pub struct Packet {
     packet_type: u8,
 
     // 7 byte payload.
-    // ping: 7 bytes random data
-    // pong: 7 bytes random data (copied from ping)
     // status: 4 byte u32 in big endian byteorder for node id, 3x1 byte status
     data: [u8; 7],
 }

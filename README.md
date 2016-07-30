@@ -1,99 +1,98 @@
-Approaches for discriminating unions without tags
-=================================================
+Unions without tags
+===================
 
-* Use case: A network protocol that outputs packets with a few bits indicating packet type.
+Assume the following:
 
-So far
-------
+* A network packet type with a fixed size of 8 bytes for all network packets
+* The first byte determines packet type
+* The remaining seven bytes are packet-type specific.
 
-Given a Base type for a network packet, wanting to get a Sub type out of it, because a few bits indicated the type:
+A library already implements the underlying type, `Packet`, for us:
 
-* Use transmuting to convert to a Sub type
-  + Seemingly "cleaned solution"
-* Use transmuting to convert a &Base to a &Sub
-  + Need to check if Rust's lifetimes properly support this, but they should
-  + Allows use in containers (i.e. Vec<Base>)
-* Use a SubView(Base) wrapper.
-  + Can hide Base if desired
-  + 0-overhead if transmute, but simply using safe code should work as well
-  + does NOT work with Vec
-* Use a SubRef(&Base) wrapper.
-  + Works with Vec
-  + Can also work as SubRef(&mut Base)
-  + Cannot provide backing store (i.e. Base needs to be stored elsewhere)
-  + Properly encodes checking needs to be done (or not), if we have the SubRef
-    type, we know checking has been done
-  + Cannot use mutated field access (changing of underlying struct)
+```
+#[repr(C)]
+pub struct Packet {
+    // packet type: 0x02 is "status"
+    packet_type: u8,
+
+    // 7 byte payload.
+    // status: 4 byte u32 in big endian byteorder for node id, 3x1 byte status
+    data: [u8; 7],
+}
+```
+
+We now want to add a way to parse high-level protocol parsing.
+
+We will use a status-packet for the example. Its packet type is `0x02`, and it will contain an unspecified 32-bit ID, followed by three status bytes as the payload.
+
+For simplicity, all we want is checked casting (i.e. fail if packet type is wrong), no matching on packet type for now.
+
+
+Possible solutions
+------------------
+
+Given a Packet `Packet` type for a network packet, possible solutions include:
+
+* Use transmuting to convert a `Packet` to a `StatusPacket` type
+* Use transmuting to convert a &Packet to a &StatusPacket
+* Use a StatusView(Packet) wrapper.
+* Use a StatusRef(&Packet) wrapper and a StatusMutRef(&mut Packet) wrapper.
 
 Use cases
 ---------
 
-* A send function. send(&Base). Should be possible to pass &Sub to it somehow.
-* Methods on Sub and Base. Base methods should ideally still work? However, there may be destructive methods that destroy the Sub types integrity if used. Should not implement DerefMut!
-* Ability to get Sub-type from just a &Base (retrieved from Vec).
-* Passing an owned but parsed Packet on to another function.
+There are a few use cases that we specifically want to be able to handle, preferably with no overhead:
 
-or differently:
+1. A send function (requires a `&Packet` to read). It should be convenient
+   to pass a `StatusPacket` or `&StatusPacket` to it somehow.
+2. Methods on StatusPacket and Packet should ideally both work, if immutable.
+   While Packet is borrowed/embedded in/converted to a StatusPacket, writes
+   using the underlying `Packet` should be prevent, because they might destroy
+   the `StatusPacket` structure.
+3. Parsing (obtaining a `&StatusPacket`) should be possible using just a
+   reference `&Packet`. This is important when multiple `Packet`s are stored
+   in a collection
+4. Passing a parsed packet to a function that only accepts parsed (e.g.
+   `StatusPacket`) -- done to preserve information that the packet has already
+   been parsed as valid.
 
-1. send(&b)
-2. s.base_method(), s.sub_method()
-3. let s = log.first().to_sub()
-4. sub_process(s)
-5. Easy field access using structs fields (Note: Limited value because endianness often differs)
+Expressed differently, roughly these calls:
 
-Applicability
-=============
+1. send_packet(&p)
+2. s.base_method(), s.status_method()
+3. let s: & = log.first()...  // Log is a Vec<Packet>
+4. process_status_packet(s)
+5. Optional: Allow direct access to fields (i.e. regular struct). Often not
+   useful because of byteorder issues.
 
-     Base->Sub  &Base->&Sub  SubView(Base)  SubRef(&Base)
+Functionality
+-------------
+
+* P->S: transmuting Packet into StatusPacket
+* &P->&S: transmuting &Packet into &StatusPacket
+* View: A StatusView owning a Packet
+* RefView: A StatusRefView/StatusMutRefView owning a &Packet/&mut Packet
+
+```
+      P->S       &P->&S        View          RefView
  1.   Deref      Deref        Deref          Deref
  2.   Deref      Deref        Deref          Deref
  3.     X          ✓            X              ✓
  4.     ✓          X            ✓              X
  5.     ✓          ✓            X              X
+```
 
-Possible workaround: Deref SubView(Base) -> SubRef(&Base) or Deref Sub->&Base
+Deref: Can be done using Deref
+X: Not possible?
+✓: Works
 
-Verdict
--------
+Implementations
+---------------
 
-&Base -> &Sub conversion requires Base -> Sub conversion to be present
+The `viewtest.rs` implementation contains an possible implementation for the View-based version, while `casttest.rs` is a transmute/cast based one that uses types directly.
 
-Optional: Implement Deref<Base> for every Sub? Would allow passing in a Sub packet where a Base one is needed. Alternatively, implement it for the Wrapper SubView/SubRef types? I.e. SubRef(&Base) should implement Deref<&Base>
-
-Oli's proposal
+Open questions
 --------------
 
-Generalizes a conversion based on an arbitrary variant discovery function
-`t: &Base -> usize` (the discriminant) and a match arm:
-
-Example:
-
-```
-match t(package) {
-    0b101 => {
-        // package is of type SubA
-        let p: SubA = unsafe { transmute(package) }
-    },
-    0b100 => {
-        // package is of type SubB
-        let p: SubB = unsafe { transmute(package) }
-    }
-}
-```
-
-Can be used using refs as well:
-
-```
-match t(package) {
-    0b101 => {
-        // package is of type SubA
-        let p: &SubA = unsafe { transmute(&package) }
-    },
-    0b100 => {
-        // package is of type SubB
-        let p: &SubB = unsafe { transmute(&package) }
-    }
-}
-```
-
-Possible improvements include using an ENUM as the discriminant. However, the whole proposal seems to solve a slightly orthogonal problem (a function that can return different types)?
+* Is `Deref` being abused here, as we're trying to use the `*`-operator to get
+  back two different types?

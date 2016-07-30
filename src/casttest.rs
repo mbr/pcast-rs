@@ -4,12 +4,10 @@ use std::mem::transmute;
 
 #[repr(C)]
 pub struct Packet {
-    // packet type: 0 => ping, 1 => pong, 2 => status
+    // packet type: 0x02 is "status"
     packet_type: u8,
 
     // 7 byte payload.
-    // ping: 7 bytes random data
-    // pong: 7 bytes random data (copied from ping)
     // status: 4 byte u32 in big endian byteorder for node id, 3x1 byte status
     data: [u8; 7],
 }
@@ -132,7 +130,7 @@ mod test {
             // FIXME: DerefMut not a good idea beacause we don't want
             //        to allow manipulations on a reference -- it might
             //        invalidate StatusPacket
-            //        &(*pref) seems kind of silly though
+            //        &(*pref) seems kind of silly though to drop the mut
             let status_view: &StatusPacket = (&(*pref)).try_into().unwrap();
             send(&status_view);
         }
