@@ -44,12 +44,16 @@ impl<'a> TryFrom<&'a Packet> for &'a StatusPacket {
     }
 }
 
-impl Packet {
-    pub fn get_status_mut_ref(&mut self) -> &mut StatusPacket {
-        assert_eq!(self.packet_type, 2);
-        unsafe { transmute(self) }
-    }
+impl<'a> TryFrom<&'a mut Packet> for &'a mut StatusPacket {
+    type Err = ConversionError;
 
+    fn try_from(packet_ref: &mut Packet) -> Result<Self, Self::Err> {
+        // FIXME: check here
+        Ok(unsafe { transmute(packet_ref) })
+    }
+}
+
+impl Packet {
     pub fn get_raw_payload(&self) -> &[u8] {
         &self.data
     }
@@ -110,7 +114,7 @@ mod test {
             send(status_view);
         }
 
-        let mut status_mut_ref = owned.get_status_mut_ref();
+        let mut status_mut_ref: &mut StatusPacket = (&mut owned).try_into().unwrap();
         status_mut_ref.set_status_2(0x12);
         assert_eq!(status_mut_ref.get_status_2(), 0x12);
         send(&status_mut_ref);
@@ -133,7 +137,7 @@ mod test {
             send(&status_view);
         }
 
-        let mut status_mut_view = pref.get_status_mut_ref();
+        let mut status_mut_view: &mut StatusPacket = pref.try_into().unwrap();
         status_mut_view.set_status_2(0x12);
         assert_eq!(status_mut_view.get_status_2(), 0x12);
         send(&status_mut_view);
@@ -150,7 +154,7 @@ mod test {
             status_view.get_raw_payload();
         }
 
-        let mut status_mut_view = owned.get_status_mut_ref();
+        let mut status_mut_view: &mut StatusPacket = (&mut owned).try_into().unwrap ();
         status_mut_view.get_status_2();
         status_mut_view.get_raw_payload();
         status_mut_view.set_status_2(0x34);
