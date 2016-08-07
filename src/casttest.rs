@@ -2,6 +2,58 @@ use std::convert::TryFrom;
 use std::ops::Deref;
 use std::mem::transmute;
 
+trait SubtypeCheck<F, T, E> {
+    fn check_is_valid_subtype(&self) -> Result<(), E>;
+}
+
+macro_rules! subtype_of {
+    ($base:path => $sub:path | $cerr:path $check_fn:block) => (
+        impl SubtypeCheck<$base, $sub, $cerr> for $base {
+            fn check_is_valid_subtype(&self) -> Result<(), $cerr> $check_fn
+        }
+
+        impl Deref for $sub {
+            type Target = $base;
+
+            #[inline(always)]
+            fn deref(&self) -> &$base {
+                unsafe { transmute::<&$sub, &$base>(self) }
+            }
+        }
+
+        impl TryFrom<$base> for $sub {
+            type Err = $cerr;
+
+            #[inline(always)]
+            fn try_from(base: $base) -> Result<Self, Self::Err> {
+                try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(&base));
+                Ok(unsafe { transmute::<$base, $sub>(base) })
+            }
+        }
+
+        impl<'a> TryFrom<&'a $base> for &'a $sub {
+            type Err = $cerr;
+
+            #[inline(always)]
+            fn try_from(base_ref: &$base) -> Result<Self, Self::Err> {
+                try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
+                Ok(unsafe { transmute::<&$base, &$sub>(base_ref) })
+            }
+        }
+
+        impl<'a> TryFrom<&'a mut $base> for &'a mut $sub {
+            type Err = $cerr;
+
+            #[inline(always)]
+            fn try_from(base_ref: &mut $base) -> Result<Self, Self::Err> {
+                try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
+                Ok(unsafe { transmute::<&mut $base, &mut $sub>(base_ref) })
+            }
+        }
+
+    )
+}
+
 #[repr(C)]
 pub struct Packet {
     // packet type: 0x02 is "status"
@@ -20,6 +72,31 @@ pub struct StatusPacket {
     status_1: u8,
     status_2: u8,
 }
+
+#[repr(C, packed)]
+pub struct PingPacket {
+    packet_type: u8,
+    dummy: u32,
+    unused: [u8; 3],
+}
+
+#[repr(C, packed)]
+pub struct PongPacket {
+    packet_type: u8,
+    dummy: u32,
+    unused: [u8; 3],
+}
+
+pub struct PongConvError {
+
+}
+
+subtype_of!(Packet => PingPacket | ConversionError {
+    Ok(())
+});
+subtype_of!(Packet => PongPacket | PongConvError {
+    Err(PongConvError {})
+});
 
 #[derive(Debug)]
 pub enum ConversionError{}
