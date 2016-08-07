@@ -7,7 +7,7 @@ trait SubtypeCheck<F, T, E> {
 }
 
 macro_rules! subtype_of {
-    ($base:path => $sub:path | $cerr:ty $check_fn:block) => (
+    ($base:ty => $sub:ty | $cerr:ty $check_fn:block) => (
         impl SubtypeCheck<$base, $sub, $cerr> for $base {
             fn check_is_valid_subtype(&self) -> Result<(), $cerr> $check_fn
         }
