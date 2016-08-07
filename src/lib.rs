@@ -1,3 +1,5 @@
+#![feature(try_from)]
+
 use std::convert::TryFrom;
 use std::ops::Deref;
 use std::mem::transmute;
