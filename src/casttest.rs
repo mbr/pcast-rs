@@ -97,36 +97,12 @@ subtype_of!(Packet => PingPacket | ConversionError {
 subtype_of!(Packet => PongPacket | PongConvError {
     Err(PongConvError {})
 });
+subtype_of!(Packet => StatusPacket | () {
+    Ok(())
+});
 
 #[derive(Debug)]
 pub enum ConversionError{}
-
-impl TryFrom<Packet> for StatusPacket {
-    type Err = ConversionError;
-
-    fn try_from(packet: Packet) -> Result<Self, Self::Err> {
-        // FIXME: check if packet_type matches
-        Ok(unsafe { transmute(packet) })
-    }
-}
-
-impl<'a> TryFrom<&'a Packet> for &'a StatusPacket {
-    type Err = ConversionError;
-
-    fn try_from(packet_ref: &Packet) -> Result<Self, Self::Err> {
-        // FIXME: check here
-        Ok(unsafe { transmute(packet_ref) })
-    }
-}
-
-impl<'a> TryFrom<&'a mut Packet> for &'a mut StatusPacket {
-    type Err = ConversionError;
-
-    fn try_from(packet_ref: &mut Packet) -> Result<Self, Self::Err> {
-        // FIXME: check here
-        Ok(unsafe { transmute(packet_ref) })
-    }
-}
 
 impl Packet {
     pub fn get_raw_payload(&self) -> &[u8] {
@@ -154,14 +130,6 @@ impl StatusPacket {
         self.status_2 = v
     }
 
-}
-
-impl Deref for StatusPacket {
-    type Target = Packet;
-
-    fn deref(&self) -> &Packet {
-        unsafe { transmute(self) }
-    }
 }
 
 #[cfg(test)]
