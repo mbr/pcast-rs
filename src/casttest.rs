@@ -129,7 +129,6 @@ impl StatusPacket {
     pub fn set_status_2(&mut self, v: u8) {
         self.status_2 = v
     }
-
 }
 
 #[cfg(test)]
