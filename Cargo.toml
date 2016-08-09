@@ -1,6 +1,6 @@
 [package]
-name = "safecast"
-version = "0.1.0"
+name = "pcast"
+version = "0.2.0"
 authors = ["Marc Brinkmann <git@marcbrinkmann.de>"]
 
 [dependencies]
