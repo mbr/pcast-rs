@@ -26,8 +26,8 @@
 //! }
 //!
 //! #[macro_use]
-//! extern crate safecast;
-//! use safecast::SubtypeCheck;
+//! extern crate pcast;
+//! use pcast::SubtypeCheck;
 //! use std::convert::TryFrom;
 //! use std::ops::Deref;
 //! use std::mem::transmute;
