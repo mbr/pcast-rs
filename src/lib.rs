@@ -1,13 +1,65 @@
+//! Same-size tagged data structure conversions.
+//!
+//! This crate provides a few boilerplate macros to enable conversions between
+//! types that are unions with a built-in discriminatory field. An example is a
+//! network protocol that consists of multiple packet-types with their
+//! respective packet-type indicated by a field on the struct:
+//!
+//! ```
+//! #![feature(try_from)]
+//!
+//! #[repr(C)]
+//! pub struct Packet {
+//!     packet_type: u8,
+//!     // an unknown (depends on packet type) payload
+//!     data: [u8; 7],
+//! }
+//!
+//! #[repr(C)]
+//! pub struct StatusPacket {
+//!     /// must be 0x02 for a status packet
+//!     packet_type: u8,
+//!     status_0: u8,
+//!     status_1: u8,
+//!     status_2: u8,
+//!     ts: [u8; 4],
+//! }
+//!
+//! #[macro_use]
+//! extern crate safecast;
+//! use safecast::SubtypeCheck;
+//! use std::convert::TryFrom;
+//! use std::ops::Deref;
+//! use std::mem::transmute;
+//!
+//! pub enum ConversionError {
+//!     WrongPacketType
+//! }
+//!
+//! subtype_of!(Packet => StatusPacket | ConversionError {
+//!     Ok(())
+//! });
+//!
+//! fn main() {}
+//! ```
+//!
+//! The `StatusPacket` has three fields for various flags and a four byte
+//! timestamp here; its presence is indicated by a value of 0x02 in
+//! `packet_type`.
+//!
+//! The `subtype_of` macro can now be used to declare express this:
+
 #![feature(try_from)]
 
 use std::convert::TryFrom;
 use std::ops::Deref;
 use std::mem::transmute;
 
-trait SubtypeCheck<F, T, E> {
+pub trait SubtypeCheck<F, T, E> {
     fn check_is_valid_subtype(&self) -> Result<(), E>;
 }
 
+#[macro_export]
 macro_rules! subtype_of {
     ($base:ty => $sub:ty | $cerr:ty $check_fn:block) => (
         impl SubtypeCheck<$base, $sub, $cerr> for $base {
