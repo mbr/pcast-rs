@@ -156,7 +156,7 @@ subtype_of!(Packet => StatusPacket | () {
 });
 
 #[derive(Debug)]
-pub enum ConversionError{}
+pub enum ConversionError {}
 
 impl Packet {
     pub fn get_raw_payload(&self) -> &[u8] {
@@ -250,7 +250,7 @@ mod test {
             status_view.get_raw_payload();
         }
 
-        let mut status_mut_view: &mut StatusPacket = (&mut owned).try_into().unwrap ();
+        let mut status_mut_view: &mut StatusPacket = (&mut owned).try_into().unwrap();
         status_mut_view.get_status_2();
         status_mut_view.get_raw_payload();
         status_mut_view.set_status_2(0x34);
