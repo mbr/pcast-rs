@@ -1,3 +1,6 @@
+#![feature(try_from)]
+
+
 //! Same-size tagged data structure conversions.
 //!
 //! This crate provides a few boilerplate macros to enable conversions between
@@ -52,8 +55,6 @@
 //! as altering the `Packet`-structure might violate invariants required
 //! by `StatusPacket`.
 
-#![feature(try_from)]
-
 pub trait SubtypeCheck<F, T, E> {
     fn check_is_valid_subtype(&self) -> Result<(), E>;
 }
@@ -65,129 +66,131 @@ macro_rules! subtype_of {
             fn check_is_valid_subtype(&self) -> Result<(), $cerr> $check_fn
         }
 
-        impl std::ops::Deref for $sub {
+        impl ::std::ops::Deref for $sub {
             type Target = $base;
 
             #[inline(always)]
             fn deref(&self) -> &$base {
-                unsafe { std::mem::transmute::<&$sub, &$base>(self) }
+                unsafe { ::std::mem::transmute::<&$sub, &$base>(self) }
             }
         }
 
-        impl std::convert::TryFrom<$base> for $sub {
+        impl ::std::convert::TryFrom<$base> for $sub {
             type Err = $cerr;
 
             #[inline(always)]
             fn try_from(base: $base) -> Result<Self, Self::Err> {
                 try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(&base));
-                Ok(unsafe { std::mem::transmute::<$base, $sub>(base) })
+                Ok(unsafe { ::std::mem::transmute::<$base, $sub>(base) })
             }
         }
 
-        impl<'a> std::convert::TryFrom<&'a $base> for &'a $sub {
+        impl<'a> ::std::convert::TryFrom<&'a $base> for &'a $sub {
             type Err = $cerr;
 
             #[inline(always)]
             fn try_from(base_ref: &$base) -> Result<Self, Self::Err> {
                 try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
-                Ok(unsafe { std::mem::transmute::<&$base, &$sub>(base_ref) })
+                Ok(unsafe { ::std::mem::transmute::<&$base, &$sub>(base_ref) })
             }
         }
 
-        impl<'a> std::convert::TryFrom<&'a mut $base> for &'a mut $sub {
+        impl<'a> ::std::convert::TryFrom<&'a mut $base> for &'a mut $sub {
             type Err = $cerr;
 
             #[inline(always)]
             fn try_from(base_ref: &mut $base) -> Result<Self, Self::Err> {
                 try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
-                Ok(unsafe { std::mem::transmute::<&mut $base, &mut $sub>(base_ref) })
+                Ok(unsafe { ::std::mem::transmute::<&mut $base, &mut $sub>(base_ref) })
             }
         }
 
     )
 }
 
-#[repr(C)]
-pub struct Packet {
-    // packet type: 0x02 is "status"
-    packet_type: u8,
 
-    // 7 byte payload.
-    // status: 4 byte u32 in big endian byteorder for node id, 3x1 byte status
-    data: [u8; 7],
-}
-
-#[repr(C)]
-pub struct StatusPacket {
-    packet_type: u8,
-    ts: [u8; 4],
-    status_0: u8,
-    status_1: u8,
-    status_2: u8,
-}
-
-#[repr(C, packed)]
-pub struct PingPacket {
-    packet_type: u8,
-    dummy: u32,
-    unused: [u8; 3],
-}
-
-#[repr(C, packed)]
-pub struct PongPacket {
-    packet_type: u8,
-    dummy: u32,
-    unused: [u8; 3],
-}
-
-pub struct PongConvError {
-
-}
-
-subtype_of!(Packet => PingPacket | ConversionError {
-    Ok(())
-});
-subtype_of!(Packet => PongPacket | PongConvError {
-    Err(PongConvError {})
-});
-subtype_of!(Packet => StatusPacket | () {
-    Ok(())
-});
-
-#[derive(Debug)]
-pub enum ConversionError {}
-
-impl Packet {
-    pub fn get_raw_payload(&self) -> &[u8] {
-        &self.data
-    }
-
-    pub fn set_raw_payload(&mut self, data: [u8; 7]) {
-        self.data = data
-    }
-
-    pub fn new(packet_type: u8, data: [u8; 7]) -> Packet {
-        Packet {
-            packet_type: packet_type,
-            data: data,
-        }
-    }
-}
-
-impl StatusPacket {
-    pub fn get_status_2(&self) -> u8 {
-        self.status_2
-    }
-
-    pub fn set_status_2(&mut self, v: u8) {
-        self.status_2 = v
-    }
-}
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::convert::TryInto;
+    use ::std::convert::TryInto;
+
+    #[repr(C)]
+    pub struct Packet {
+        // packet type: 0x02 is "status"
+        packet_type: u8,
+
+        // 7 byte payload.
+        // status: 4 byte u32 in big endian byteorder for node id, 3x1 byte status
+        data: [u8; 7],
+    }
+
+    #[repr(C)]
+    pub struct StatusPacket {
+        packet_type: u8,
+        ts: [u8; 4],
+        status_0: u8,
+        status_1: u8,
+        status_2: u8,
+    }
+
+    #[repr(C, packed)]
+    pub struct PingPacket {
+        packet_type: u8,
+        dummy: u32,
+        unused: [u8; 3],
+    }
+
+    #[repr(C, packed)]
+    pub struct PongPacket {
+        packet_type: u8,
+        dummy: u32,
+        unused: [u8; 3],
+    }
+
+    pub struct PongConvError {
+
+    }
+
+    subtype_of!(Packet => PingPacket | ConversionError {
+        Ok(())
+    });
+    subtype_of!(Packet => PongPacket | PongConvError {
+        Err(PongConvError {})
+    });
+    subtype_of!(Packet => StatusPacket | () {
+        Ok(())
+    });
+
+    #[derive(Debug)]
+    pub enum ConversionError {}
+
+    impl Packet {
+        pub fn get_raw_payload(&self) -> &[u8] {
+            &self.data
+        }
+
+        pub fn set_raw_payload(&mut self, data: [u8; 7]) {
+            self.data = data
+        }
+
+        pub fn new(packet_type: u8, data: [u8; 7]) -> Packet {
+            Packet {
+                packet_type: packet_type,
+                data: data,
+            }
+        }
+    }
+
+    impl StatusPacket {
+        pub fn get_status_2(&self) -> u8 {
+            self.status_2
+        }
+
+        pub fn set_status_2(&mut self, v: u8) {
+            self.status_2 = v
+        }
+    }
 
     /// send takes a raw packet to send
     fn send(packet: &Packet) {
