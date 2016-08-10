@@ -28,9 +28,6 @@
 //! #[macro_use]
 //! extern crate pcast;
 //! use pcast::SubtypeCheck;
-//! use std::convert::TryFrom;
-//! use std::ops::Deref;
-//! use std::mem::transmute;
 //!
 //! pub enum ConversionError {
 //!     WrongPacketType
@@ -57,10 +54,6 @@
 
 #![feature(try_from)]
 
-use std::convert::TryFrom;
-use std::ops::Deref;
-use std::mem::transmute;
-
 pub trait SubtypeCheck<F, T, E> {
     fn check_is_valid_subtype(&self) -> Result<(), E>;
 }
@@ -72,42 +65,42 @@ macro_rules! subtype_of {
             fn check_is_valid_subtype(&self) -> Result<(), $cerr> $check_fn
         }
 
-        impl Deref for $sub {
+        impl std::ops::Deref for $sub {
             type Target = $base;
 
             #[inline(always)]
             fn deref(&self) -> &$base {
-                unsafe { transmute::<&$sub, &$base>(self) }
+                unsafe { std::mem::transmute::<&$sub, &$base>(self) }
             }
         }
 
-        impl TryFrom<$base> for $sub {
+        impl std::convert::TryFrom<$base> for $sub {
             type Err = $cerr;
 
             #[inline(always)]
             fn try_from(base: $base) -> Result<Self, Self::Err> {
                 try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(&base));
-                Ok(unsafe { transmute::<$base, $sub>(base) })
+                Ok(unsafe { std::mem::transmute::<$base, $sub>(base) })
             }
         }
 
-        impl<'a> TryFrom<&'a $base> for &'a $sub {
+        impl<'a> std::convert::TryFrom<&'a $base> for &'a $sub {
             type Err = $cerr;
 
             #[inline(always)]
             fn try_from(base_ref: &$base) -> Result<Self, Self::Err> {
                 try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
-                Ok(unsafe { transmute::<&$base, &$sub>(base_ref) })
+                Ok(unsafe { std::mem::transmute::<&$base, &$sub>(base_ref) })
             }
         }
 
-        impl<'a> TryFrom<&'a mut $base> for &'a mut $sub {
+        impl<'a> std::convert::TryFrom<&'a mut $base> for &'a mut $sub {
             type Err = $cerr;
 
             #[inline(always)]
             fn try_from(base_ref: &mut $base) -> Result<Self, Self::Err> {
                 try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
-                Ok(unsafe { transmute::<&mut $base, &mut $sub>(base_ref) })
+                Ok(unsafe { std::mem::transmute::<&mut $base, &mut $sub>(base_ref) })
             }
         }
 
