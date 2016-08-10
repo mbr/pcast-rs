@@ -1,6 +1,3 @@
-#![feature(try_from)]
-
-
 //! Same-size tagged data structure conversions.
 //!
 //! This crate provides a few boilerplate macros to enable conversions between
@@ -9,8 +6,6 @@
 //! respective packet-type indicated by a field on the struct:
 //!
 //! ```
-//! #![feature(try_from)]
-//!
 //! #[repr(C)]
 //! pub struct Packet {
 //!     packet_type: u8,
@@ -53,6 +48,17 @@
 //! A conversion from `&mut StatusPacket` to `&mut Packet` is not included,
 //! as altering the `Packet`-structure might violate invariants required
 //! by `StatusPacket`.
+//!
+//! ## TryFrom and TryInto
+//!
+//! The `TryFrom` and `TryInto` traits are not stabilized yet. `pcast`
+//! reexports these for the time being from the `try_from` crate; as soon as
+//! they are stabilized in `std::convert`, the export will be updated.
+
+extern crate try_from;
+
+pub use try_from::TryInto;
+pub use try_from::TryFrom;
 
 pub trait SubtypeCheck<F, T, E> {
     fn check_is_valid_subtype(&self) -> Result<(), E>;
@@ -74,7 +80,7 @@ macro_rules! subtype_of {
             }
         }
 
-        impl ::std::convert::TryFrom<$base> for $sub {
+        impl $crate::TryFrom<$base> for $sub {
             type Err = $cerr;
 
             #[inline(always)]
@@ -84,7 +90,7 @@ macro_rules! subtype_of {
             }
         }
 
-        impl<'a> ::std::convert::TryFrom<&'a $base> for &'a $sub {
+        impl<'a> $crate::TryFrom<&'a $base> for &'a $sub {
             type Err = $cerr;
 
             #[inline(always)]
@@ -94,7 +100,7 @@ macro_rules! subtype_of {
             }
         }
 
-        impl<'a> ::std::convert::TryFrom<&'a mut $base> for &'a mut $sub {
+        impl<'a> $crate::TryFrom<&'a mut $base> for &'a mut $sub {
             type Err = $cerr;
 
             #[inline(always)]
@@ -109,7 +115,7 @@ macro_rules! subtype_of {
 
 #[cfg(test)]
 mod test {
-    use ::std::convert::TryInto;
+    use super::TryInto;
 
     #[repr(C)]
     pub struct Packet {
