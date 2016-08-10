@@ -47,7 +47,13 @@
 //! timestamp here; its presence is indicated by a value of 0x02 in
 //! `packet_type`.
 //!
-//! The `subtype_of` macro can now be used to declare express this:
+//! The `subtype_of` macro can now be used to declare express this. As a
+//! result, a `Packet` can be `try_into`'d into a `StatusPacket` and references
+//! can be passed because `&StatusPacket` will `Deref` to `&Packet`.
+//!
+//! A conversion from `&mut StatusPacket` to `&mut Packet` is not included,
+//! as altering the `Packet`-structure might violate invariants required
+//! by `StatusPacket`.
 
 #![feature(try_from)]
 
