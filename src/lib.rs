@@ -30,7 +30,6 @@
 //!
 //! #[macro_use]
 //! extern crate pcast;
-//! use pcast::SubtypeCheck;
 //!
 //! pub enum ConversionError {
 //!     WrongPacketType
@@ -62,7 +61,7 @@ pub trait SubtypeCheck<F, T, E> {
 #[macro_export]
 macro_rules! subtype_of {
     ($base:ty => $sub:ty | $cerr:ty $check_fn:block) => (
-        impl SubtypeCheck<$base, $sub, $cerr> for $base {
+        impl $crate::SubtypeCheck<$base, $sub, $cerr> for $base {
             fn check_is_valid_subtype(&self) -> Result<(), $cerr> $check_fn
         }
 
@@ -80,7 +79,7 @@ macro_rules! subtype_of {
 
             #[inline(always)]
             fn try_from(base: $base) -> Result<Self, Self::Err> {
-                try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(&base));
+                try!($crate::SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(&base));
                 Ok(unsafe { ::std::mem::transmute::<$base, $sub>(base) })
             }
         }
@@ -90,7 +89,7 @@ macro_rules! subtype_of {
 
             #[inline(always)]
             fn try_from(base_ref: &$base) -> Result<Self, Self::Err> {
-                try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
+                try!($crate::SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
                 Ok(unsafe { ::std::mem::transmute::<&$base, &$sub>(base_ref) })
             }
         }
@@ -100,7 +99,7 @@ macro_rules! subtype_of {
 
             #[inline(always)]
             fn try_from(base_ref: &mut $base) -> Result<Self, Self::Err> {
-                try!(SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
+                try!($crate::SubtypeCheck::<$base, $sub, $cerr>::check_is_valid_subtype(base_ref));
                 Ok(unsafe { ::std::mem::transmute::<&mut $base, &mut $sub>(base_ref) })
             }
         }
@@ -108,11 +107,8 @@ macro_rules! subtype_of {
     )
 }
 
-
-
 #[cfg(test)]
 mod test {
-    use super::*;
     use ::std::convert::TryInto;
 
     #[repr(C)]
