@@ -1,0 +1,4 @@
+var searchIndex = {};
+searchIndex["pcast"] = {"doc":"Same-size tagged data structure conversions.","items":[[8,"TryInto","pcast","",null,null],[16,"Err","","",0,null],[10,"try_into","","",0,null],[8,"TryFrom","","",null,null],[16,"Err","","",1,null],[10,"try_from","","",1,{"inputs":[{"name":"t"}],"output":{"name":"result"}}],[8,"SubtypeCheck","","Conversion trait used internally by the `subtype_of` macro.",null,null],[10,"check_is_valid_subtype","","",2,null],[14,"subtype_of!","","Generation conversion traits for subtype of base.",null,null]],"paths":[[8,"TryInto"],[8,"TryFrom"],[8,"SubtypeCheck"]]};
+searchIndex["try_from"] = {"doc":"","items":[[8,"TryFrom","try_from","",null,null],[16,"Err","","",0,null],[10,"try_from","","",0,{"inputs":[{"name":"t"}],"output":{"name":"result"}}],[8,"TryInto","","",null,null],[16,"Err","","",1,null],[10,"try_into","","",1,null]],"paths":[[8,"TryFrom"],[8,"TryInto"]]};
+initSearch(searchIndex);

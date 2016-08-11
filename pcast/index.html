@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `pcast` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, pcast">
+
+    <title>pcast - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'pcast', ty: 'mod', relpath: '../'};</script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>pcast</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-0' class='srclink' href='../src/pcast/src/lib.rs.html#1-302' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Same-size tagged data structure conversions.</p>
+
+<p>This crate provides a few boilerplate macros to enable conversions between
+types that are unions with a built-in discriminatory field. An example is a
+network protocol that consists of multiple packet-types with their
+respective packet-type indicated by a field on the struct:</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='attribute'>#[<span class='ident'>repr</span>(<span class='ident'>C</span>)]</span>
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Packet</span> {
+    <span class='ident'>packet_type</span>: <span class='ident'>u8</span>,
+    <span class='comment'>// an unknown (depends on packet type) payload</span>
+    <span class='ident'>data</span>: [<span class='ident'>u8</span>; <span class='number'>7</span>],
+}
+
+<span class='attribute'>#[<span class='ident'>repr</span>(<span class='ident'>C</span>)]</span>
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>StatusPacket</span> {
+    <span class='doccomment'>/// must be 0x02 for a status packet</span>
+    <span class='ident'>packet_type</span>: <span class='ident'>u8</span>,
+    <span class='ident'>status_0</span>: <span class='ident'>u8</span>,
+    <span class='ident'>status_1</span>: <span class='ident'>u8</span>,
+    <span class='ident'>status_2</span>: <span class='ident'>u8</span>,
+    <span class='ident'>ts</span>: [<span class='ident'>u8</span>; <span class='number'>4</span>],
+}
+
+<span class='attribute'>#[<span class='ident'>macro_use</span>]</span>
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>pcast</span>;
+
+<span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>ConversionError</span> {
+    <span class='ident'>WrongPacketType</span>
+}
+
+<span class='macro'>subtype_of</span><span class='macro'>!</span>(<span class='ident'>Packet</span> <span class='op'>=&gt;</span> <span class='ident'>StatusPacket</span> <span class='op'>|</span> <span class='ident'>ConversionError</span> {
+    <span class='prelude-val'>Ok</span>(())
+});
+
+<span class='kw'>fn</span> <span class='ident'>main</span>() {}</pre>
+
+<p>The <code>StatusPacket</code> has three fields for various flags and a four byte
+timestamp here; its presence is indicated by a value of 0x02 in
+<code>packet_type</code>.</p>
+
+<p>The <code>subtype_of</code> macro can now be used to declare express this. As a
+result, a <code>Packet</code> can be <code>try_into</code>&#39;d into a <code>StatusPacket</code> and references
+can be passed because <code>&amp;StatusPacket</code> will <code>Deref</code> to <code>&amp;Packet</code>.</p>
+
+<p>A conversion from <code>&amp;mut StatusPacket</code> to <code>&amp;mut Packet</code> is not included,
+as altering the <code>Packet</code>-structure might violate invariants required
+by <code>StatusPacket</code>.</p>
+
+<h2 id='tryfrom-and-tryinto' class='section-header'><a href='#tryfrom-and-tryinto'>TryFrom and TryInto</a></h2>
+<p>The <code>TryFrom</code> and <code>TryInto</code> traits are not stabilized yet. <code>pcast</code>
+reexports these for the time being from the <code>try_from</code> crate; as soon as
+they are stabilized in <code>std::convert</code>, the export will be updated.</p>
+</div><h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='macro' href='macro.subtype_of!.html'
+                                  title='pcast::subtype_of!'>subtype_of!</a></td>
+                           <td class='docblock short'>
+                                <p>Generation conversion traits for subtype of base.</p>
+                           </td>
+                       </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.SubtypeCheck.html'
+                                  title='pcast::SubtypeCheck'>SubtypeCheck</a></td>
+                           <td class='docblock short'>
+                                <p>Conversion trait used internally by the <code>subtype_of</code> macro.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.TryFrom.html'
+                                  title='pcast::TryFrom'>TryFrom</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='trait' href='trait.TryInto.html'
+                                  title='pcast::TryInto'>TryInto</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "pcast";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

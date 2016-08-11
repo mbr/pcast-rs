@@ -1,0 +1,1 @@
+initSidebarItems({"macro":[["subtype_of!","Generation conversion traits for subtype of base."]],"trait":[["SubtypeCheck","Conversion trait used internally by the `subtype_of` macro."],["TryFrom",""],["TryInto",""]]});
