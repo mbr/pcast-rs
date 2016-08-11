@@ -4,6 +4,7 @@ version = "0.2.0"
 authors = ["Marc Brinkmann <git@marcbrinkmann.de>"]
 license = "MIT"
 repository = "https://github.com/mbr/pcast"
+documentation = "https://mbr.github.com/pcast-rs/pcast"
 
 [dependencies]
 # this dependency should go away as soon as try_into is stabilized in the stdlib
