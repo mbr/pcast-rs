@@ -5,6 +5,9 @@ authors = ["Marc Brinkmann <git@marcbrinkmann.de>"]
 license = "MIT"
 repository = "https://github.com/mbr/pcast"
 documentation = "https://mbr.github.com/pcast-rs/pcast"
+description = "Same-size tagged data structure conversions
+
+Provides a few boilerplate macros to enable conversions between types that are unions with a built-in discriminatory field. An example is a network protocol that consists of multiple packet-types with their respective packet-type indicated by a field on the struct."
 
 [dependencies]
 # this dependency should go away as soon as try_into is stabilized in the stdlib
