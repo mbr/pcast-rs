@@ -1,6 +1,6 @@
 [package]
 name = "pcast"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Marc Brinkmann <git@marcbrinkmann.de>"]
 license = "MIT"
 repository = "https://github.com/mbr/pcast"
