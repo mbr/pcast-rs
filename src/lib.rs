@@ -60,10 +60,28 @@ extern crate try_from;
 pub use try_from::TryInto;
 pub use try_from::TryFrom;
 
+/// Conversion trait used internally by the `subtype_of` macro.
 pub trait SubtypeCheck<F, T, E> {
     fn check_is_valid_subtype(&self) -> Result<(), E>;
 }
 
+/// Generation conversion traits for subtype of base.
+///
+/// Syntax:
+///
+/// ```rust,no_run
+/// subtype_of!(Base => Sub | Error { ... })
+/// ```
+///
+/// The macro generates four conversion traits for `Sub`:
+///
+/// * `Deref<Target=Base>` for `Sub`
+/// * `TryFrom<Base, Err=Error>` for `Sub`
+/// * `TryFrom<&Base, Err=Error>` for `&Sub`
+/// * `TryFrom<&mut Base, Err=Error>` for `&mut Sub`
+///
+/// All traits use the `{ ... }` block which must expand to a `Result<(),
+/// Error>` to check whether or not a conversion is possible.
 #[macro_export]
 macro_rules! subtype_of {
     ($base:ty => $sub:ty | $cerr:ty $check_fn:block) => (
